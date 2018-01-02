@@ -1,5 +1,6 @@
 ﻿using AppConfig;
 using NUnit.Framework;
+using System;
 using System.Configuration;
 using System.IO;
 using System.Reflection;
@@ -19,10 +20,17 @@ namespace Web.Tests
                 ExeConfigFilename = exeConfigFilename
             };
 
-            Configuration config = ConfigurationManager.OpenMappedExeConfiguration(configFileMap, ConfigurationUserLevel.None);
+            Configuration originalConfig = ConfigurationManager.OpenMappedExeConfiguration(configFileMap, ConfigurationUserLevel.None);
+            originalConfig.AppSettings.File = "Common.App.config";
+            originalConfig.Save(ConfigurationSaveMode.Modified);
 
+            Configuration testConfig = ConfigurationManager.OpenMappedExeConfiguration(configFileMap, ConfigurationUserLevel.None);
             PropertyInfo appSettingsSection = typeof(AppSettingsParent).GetProperty("AppSettingsSection", BindingFlags.Static | BindingFlags.NonPublic);
-            appSettingsSection.SetValue(null, config.AppSettings, null);
+            if (appSettingsSection == null)
+            {
+                throw new InvalidOperationException($"Couldn't find \"AppSettingsSection\" property in {nameof(AppSettingsParent)}.");
+            }
+            appSettingsSection.SetValue(null, testConfig.AppSettings, null);
         }
 
         [Test]
