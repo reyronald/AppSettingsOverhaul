@@ -1,6 +1,8 @@
 # Improving AppSettings Configuration Handling in .NET
 
-In .NET, when dealing with custom application settings you basically have two choices: 1) use the Application Settings Architecture (https://docs.microsoft.com/en-us/dotnet/framework/winforms/advanced/application-settings-architecture), or 2) use the `<appSettings>` tag of your configuration file (https://msdn.microsoft.com/en-us/library/aa903313(v=vs.71).aspx). Each have their pros and cons that I won't detail here, but generally choice no. 1 is accepted as the superior one because of its support for type-safe access at compile-time. Here are some resources that talk about them and compare them in-depth:
+(published in https://medium.com/@reyronald/improving-appsettings-configuration-handling-in-net-e854e6c15305)
+
+When dealing with custom application settings in a .NET solution you basically have two choices: 1) use the Application Settings Architecture (https://docs.microsoft.com/en-us/dotnet/framework/winforms/advanced/application-settings-architecture), or 2) use the `<appSettings>` tag of your configuration file (https://msdn.microsoft.com/en-us/library/aa903313(v=vs.71).aspx). Each have their pros and cons that I won't detail here, but generally choice no. 1 is accepted as the superior one because of its support for type-safe access at compile-time. Here are some resources that talk about them and compare them in-depth:
 
 - https://stackoverflow.com/questions/460935/pros-and-cons-of-appsettings-vs-applicationsettings-net-app-config-web-confi
 - https://stackoverflow.com/questions/1058853/what-is-the-difference-between-the-applicationsettings-section-and-the-appsettin
@@ -8,7 +10,9 @@ In .NET, when dealing with custom application settings you basically have two ch
 - https://stackoverflow.com/questions/1772140/using-app-config-to-set-strongly-typed-variables
 - http://geekswithblogs.net/DougLampe/archive/2014/11/10/boo-appsettings--yay-applicationsettings.aspx
 
-However, the former has some limitations that the latter doesn't. For instance, with the Application Settings Architecture is not possible to reuse configurations from several projects. With a little bit of code, we can bring a high level of robustness to the appSettings mechanism, which in my opinion, may even make it superior in some cases. Here I will outline my approach to achieve this and more, without a lot of the noise and generated code Visual Studio produces, which will leave us with a lot cleaner and less "magical" solution. Something to note is that this only applies as-is to .NET Framework, because configuration handling in .NET Core and .NET Standard is slightly different, although the concept itself can still be transferable.
+However, that doesn’t mean that the appSettings tag is completely useless. It still has its place and is widely used because of its simplicity and low overhead in comparison with the alternative. Also, the former has some limitations that the latter doesn’t. For instance, with the Application Settings Architecture is not possible to share configurations among several projects.
+
+With a little bit of code, we can bring a high level of robustness to the appSettings mechanism, which in my opinion, may even make it superior in most cases. Here I will outline my approach to achieve this and more, without a lot of the noise and generated code Visual Studio produces with other solutions, which will leave us with a lot cleaner and less “magical” solution. Something to note is that this only applies as-is to .NET Framework, because configuration handling in .NET Core and .NET Standard is slightly different, although the concept itself can still be transferable.
 
 ### What we are aiming for
 
@@ -17,7 +21,7 @@ In a vanilla approach with appSettings we deal with configuration directly using
 - Since the access to the configuration values in the code is done through a dictionary-like structure, there's no autocompletion, intellisense,  suggestions or tooling of any kind when using the store. This has several implications… for starters, it means that to access a value, you have to make sure what key is it associated to by looking into the configuration file (`app.config` or `web.config`). Secondly, if you mistyped the key when accessing it, you would have no compile time check of this mistake, and it would be a run-time error that could easily slip into production. 
 - All the values in the `ConfigurationManager` dictionary return a string, which means that there has to be a manual casting or conversion of any non-string configuration value prior to its use in the code, introducing a lot of boilerplate code to the logic, and possible run-time errors when the value was not configured in the right format.
 - Duplication! In a Service Oriented Architecture or any other setup where there are multiple Start-Up projects, each one of them needs to have their own configuration file, which in many cases will result in many duplicated configuration settings across the solution.
-- Static Cling anti-pattern (see http://deviq.com/static-cling/).
+- An architecture which can help us avoid the Static Cling anti-pattern (see http://deviq.com/static-cling/).
 
 The purpose of the proposed overhaul is to address these weaknesses and to make configuration handling much more friendlier for the developer. In contrast, the benefits that I am seeking to achieve are:
 
